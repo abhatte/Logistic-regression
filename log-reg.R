@@ -1,8 +1,6 @@
 ## Regression with binary outcomes
-## ═════════════════════════════════
 
 ## Logistic regression
-## ───────────────────────
 
 ##   This far we have used the `lm' function to fit our regression models.
 ##   `lm' is great, but limited–in particular it only fits models for
@@ -30,7 +28,6 @@ labs <- attributes(NH11)$labels
 ##   [CDC website] http://www.cdc.gov/nchs/nhis.htm
 
 ## Logistic regression example
-## ───────────────────────────────
 
 ##   Let's predict the probability of being diagnosed with hypertension
 ##   based on age, sex, sleep, and bmi
@@ -45,7 +42,7 @@ hyp.out <- glm(hypev~age_p+sex+sleep+bmi,
 coef(summary(hyp.out))
 
 ## Logistic regression coefficients
-## ────────────────────────────────────
+
 
 ##   Generalized linear models use link functions, so raw coefficients are
 ##   difficult to interpret. For example, the age coefficient of .06 in the
@@ -61,7 +58,6 @@ hyp.out.tab[, "Estimate"] <- exp(coef(hyp.out))
 hyp.out.tab
 
 ## Generating predicted values
-## ───────────────────────────────
 
 ##   In addition to transforming the log-odds produced by `glm' to odds, we
 ##   can use the `predict()' function to make direct statements about the
@@ -85,7 +81,7 @@ cbind(predDat, predict(hyp.out, type = "response",
 ##   has a 48% probability of having been diagnosed.
 
 ## Packages for  computing and graphing predicted values
-## ─────────────────────────────────────────────────────────
+
 
 ##   Instead of doing all this ourselves, we can use the effects package to
 ##   compute quantities of interest for us (cf. the Zelig package).
@@ -94,7 +90,7 @@ library(effects)
 plot(allEffects(hyp.out))
 
 ## Exercise: logistic regression
-## ───────────────────────────────────
+
 
 ##   Use the NH11 data set that we loaded earlier.
 
