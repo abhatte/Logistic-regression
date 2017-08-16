@@ -87,7 +87,7 @@ cbind(predDat, predict(hyp.out, type = "response",
 
 #   Instead of doing all this ourselves, we can use the effects package to
 #   compute quantities of interest for us (cf. the Zelig package).
-install.packages("effects")
+# install.packages("effects")
 library(effects)
 plot(allEffects(hyp.out))
 
@@ -107,72 +107,40 @@ plot(allEffects(hyp.out))
 
 str(NH11)
 summary(NH11)
-
-install.packages("mice")
-library(mice)
-
-
-levels(NH11$everwrk) # check levels of everwrk
+table(NH11$everwrk)
+levels(NH11$everwrk)
+# collapse all missing values to NA
+NH11$everwrk <- factor(NH11$everwrk, levels=c("2 No", "1 Yes"))
+NH11$r_maritl <- factor(NH11$r_maritl)
 summary(NH11$everwrk)
 
-NH11$everwrk[(NH11$everwrk == "7 Refused") |
-               (NH11$everwrk == "8 Not ascertained") |
-               (NH11$everwrk == "9 Don't know")] <- NA
-summary(NH11$everwrk)
-levels(NH11$r_maritl)
-# Use Multivariate Imputation to replace missing values in $everwrk. 
-simple <- NH11[c("age_p", "everwrk", "r_maritl")]
-summary(simple)
-
-imputed <- complete(mice(simple))
-summary(imputed)
-NH11$everwrk <- imputed$everwrk
-NH11$r_maritl <- imputed$r_maritl
-summary(NH11$everwrk)
-summary(NH11$r_maritl)
-
-# Now that the data is tidy, let's explore it with some quick plots to get a better idea
-# library(ggplot2)
-# ggplot(imputed, aes(everwrk)) +
-#   geom_bar()
-# ggplot(imputed, aes(r_maritl)) +
-#   geom_bar()
-# ggplot(imputed, aes(age_p)) + 
-#   geom_histogram()
-
-# Our baseline model will assume that all responses are yes. 
-# Since there are 33,014 total observations, and 27,978 actual yes responses, 
-# this baseline model has an accuracy of 27,978/33,014 or 84.7%. 
-# Let's see if we can beat that using logistic regression.
-
-# Since we are dealing with a large amount of data, 
-# I have decided to split our data 80/20 training/testing, to try to maximize accuracy. 
-
-install.packages("caTools")
-library(caTools)
-
-set.seed(144)
-split <- sample.split(imputed$everwrk, SplitRatio = 0.80)
-train <- subset(imputed, split == TRUE)
-test <- subset(imputed, split == FALSE)
-
-workLog <- glm(everwrk~r_maritl+age_p, data = train, family = binomial)
+# run our regression model
+workLog <- glm(everwrk~r_maritl+age_p, data = NH11, family = "binomial")
 summary(workLog)
+# Let's transform the coefficients to make them easier to interpret
+workLog.tab <- coef(summary(workLog))
+workLog.tab[, "Estimate"] <- exp(coef(workLog))
+workLog.tab
+# This shows us the probability of working for each level of marital status
+# Married - spouse not in household = 0.95%
+# Widowed = 0.50%
+# Divorced = 2.1%
+# Separated = 1.13%
+# Never married = 0.71%
+# Living with partner = 1.55%
+# Unknown marital status = 0.67%
 
-predictTest <- predict(workLog, type = "response", newdata = test)
-table(test$everwrk, predictTest > 0.3)
+predDat1 <- with(NH11,
+                expand.grid(age_p = c(33, 63),
+                            sex = "2 Female",
+                            r_maritl = "7 Never married"))
 
+cbind(predDat1, predict(workLog, type = "response",
+                       se.fit = TRUE, interval="confidence",
+                       newdata = predDat1))
+#   This tells us that a 33 year old female has a 75% probability of
+#   ever worked, while and 63 year old female has a 87% probability of ever worked.
+
+# To compute the quantities of interest, let's plot the graph
 plot(allEffects(workLog))
-
-# accuracy of the model: 82.44%
-(5282+162) / (5282+331+828+162)
-
-# max. number of cases 5282, hence baseline model mostly predicts everwork = yes 
-# accuracy of baseline model: 85% 
-(5282+331) / (5282+331+828+162)
-
-table(test$everwrk, predictTest > 0.2) # 73.16371%
-(4419+412)/(4419+1194+578+412)
-(4419+1194)/(4419+1194+578+412) # 85.00682%
-
 
